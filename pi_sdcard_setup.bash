@@ -57,7 +57,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-image_to_download="https://downloads.raspberrypi.org/raspbian_latest"
+image_to_download="https://downloads.raspberrypi.org/raspios_armhf_latest"
 
 # Note the quotes around "$TEMP": they are essential!
 eval set -- "$TEMP"
@@ -147,35 +147,32 @@ then
     zip_file_name="${1:?No download specified, so a zip file name must be specified}"
 else
     # Use a default zip file path of "./raspian_image.zip"
-    zip_file_name="${1:-./raspbian_image.zip}"
+    zip_file_name="${1:-./raspios_image.zip}"
 
-    # 1. Get the source of the download index page
-    # 2. Get the 30 lines following the name of the image to download
-    # 3. Look for the first line containing 'SHA-256'
-    # 4. Extract the checksum from that line.
-    # Yes, a bunch of assumptions, but fewer than the last version.
+    echo "[Optional] Enter SHA256 checksum to validate download."
+    read -p "  SHA256 checksum: " checksum
 
-    checksum_line=$(wget --quiet https://www.raspberrypi.org/downloads/raspbian/ -O - | grep -A 30 -F \"$image_to_download\" | grep SHA-256 | head -1)
-    checksum=$(echo "$checksum_line" | sed -e 's/.*\([0-9a-fA-F]\{64\}\).*/\1/')
-
-    if [[ ! $checksum =~ [0-9a-fA-F]{64} ]]
+    if [[ ! -z $checksum && ! $checksum =~ [0-9a-fA-F]{64} ]]
     then
-        echo "Error occurred while parsing for the Raspian checksum."
-        echo "You will need to fix this before proceeding."
+	echo "That does not look like a valid SHA256 checksum. Try again."
         exit 1
     fi
 
     # Download the latest image, using the  --continue "Continue getting a partially-downloaded file"
     wget --continue "${image_to_download}" -O "${zip_file_name}"
 
-    echo "Checking that the SHA-256 of the downloaded image matches \"${checksum}\""
-
-    if [[ $( sha256sum "${zip_file_name}" | awk '{ print $1 }') == ${checksum} ]]
+    if [[ -z $checksum ]]
     then
-        echo "The checksums match"
+	echo "Skipping checksum check"
     else
-        echo "The checksums did not match"
-        exit 1
+        echo "Checking that the SHA-256 of the downloaded image matches \"${checksum}\""
+        if [[ $( sha256sum "${zip_file_name}" | awk '{ print $1 }') == ${checksum} ]]
+        then
+            echo "The checksums match"
+        else
+            echo "The checksums did not match"
+            exit 1
+        fi
     fi
 fi
 
@@ -183,7 +180,7 @@ fi
 mkdir -p ${sdcard_mount}
 
 # unzip
-extracted_image="$( 7z l ${zip_file_name} | awk '/^[0-9]{4}-[0-9]{2}-[0-9]{2}.*img$/ {print $NF}' )"
+extracted_image="$( 7z l ${zip_file_name} | egrep '[0-9]{4}-[0-9]{2}-[0-9]{2}.*img' | awk '{print $NF}' )"
 echo "The name of the image file is \"${extracted_image}\""
 
 7z -y x "${zip_file_name}"
