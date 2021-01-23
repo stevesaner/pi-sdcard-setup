@@ -50,20 +50,20 @@ cmdline="$0 $*"
 # Note that we use "$@" to let each command-line parameter expand to a
 # separate word. The quotes around "$@" are essential!
 # We need TEMP as the 'eval set --' would nuke the return value of getopt.
-TEMP=$(getopt -o 'hmd::' --long 'help,man,download::' -n "$(basename $0)" -- "$@")
+TEMP=$(getopt -o 'hmlfd::' --long 'help,man,lite,full,download::' -n "$(basename $0)" -- "$@")
 
 if [ $? -ne 0 ]; then
     echo 'Terminating...' >&2
     exit 1
 fi
 
-image_to_download="https://downloads.raspberrypi.org/raspios_armhf_latest"
-
 # Note the quotes around "$TEMP": they are essential!
 eval set -- "$TEMP"
 unset TEMP
 
 use_download=0
+use_lite=0
+use_full=0
 while true; do
     case "$1" in
 	'-d'|'--download')
@@ -78,6 +78,16 @@ while true; do
 		    ;;
 	    esac
 	    shift 2
+	    continue
+	    ;;
+	'-l'|'--lite')
+	    use_lite=1
+	    shift
+	    continue
+	    ;;
+	'-f'|'--full')
+	    use_full=1
+	    shift
 	    continue
 	    ;;
         '-h'|'--help')
@@ -132,6 +142,17 @@ then
     exit 1
 fi
 #------------------------------------------------------------
+
+base_url="https://downloads.raspberrypi.org/"
+if [[ $use_lite -eq 1 ]]
+then
+    image_to_download="${base_url}raspios_lite_armhf_latest"
+elif [[ $use_full -eq 1 ]]
+then
+    image_to_download="${base_url}raspios_full_armhf_latest"
+else
+    image_to_download="${base_url}raspios_armhf_latest"
+fi
 
 if [ ! -e "${public_key_file}" ]
 then
