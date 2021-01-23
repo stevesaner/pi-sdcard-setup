@@ -306,6 +306,24 @@ L<https://downloads.raspberrypi.org/raspbian_latest> If this option is
 not used, you will need to supply the name of a .zip file that
 contains an Raspbian image.
 
+=head2 ENVIORNMENT VARIABLES
+
+=over 8
+
+=item RPI_ROOT_PW_CLEAR
+
+Configure root password in image to this clear text password.
+
+=item RPI_PI_PW_CLEAR
+
+Configure pi password in image to this clear text password.
+
+=item RPI_PUB_KEY_PATH
+
+Add the public key in this path to the image.
+
+=back
+
 =back
 
 =head1 DESCRIPTION
